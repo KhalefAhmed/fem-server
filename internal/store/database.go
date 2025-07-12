@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pressly/goose/v3"
+	"io/fs"
 	"time"
 )
 
@@ -17,6 +19,29 @@ func Open() (*sql.DB, error) {
 	db.SetMaxIdleConns(1)
 	db.SetConnMaxIdleTime(1 * time.Minute)
 
-	fmt.Printf("Connected to database")
+	fmt.Printf("Connected to database\n")
 	return db, nil
+}
+
+func MigrateFS(db *sql.DB, migrationFS fs.FS, dir string) error {
+	goose.SetBaseFS(migrationFS)
+	defer func() {
+		goose.SetBaseFS(nil)
+	}()
+	return Migrate(db, dir)
+}
+
+func Migrate(db *sql.DB, dir string) error {
+	err := goose.SetDialect("postgres")
+
+	if err != nil {
+		return fmt.Errorf("migrate: %w\n", err)
+	}
+
+	err = goose.Up(db, dir)
+
+	if err != nil {
+		return fmt.Errorf("goose up: %w\n", err)
+	}
+	return nil
 }

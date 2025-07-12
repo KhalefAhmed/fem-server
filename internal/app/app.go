@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/KhalefAhmed/fem-server/internal/api"
 	"github.com/KhalefAhmed/fem-server/internal/store"
+	"github.com/KhalefAhmed/fem-server/migrations"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +23,11 @@ func NewApplication() (*Application, error) {
 		return nil, err
 	}
 
+	err = store.MigrateFS(pgDB, migrations.FS, ".")
+	if err != nil {
+		panic(err)
+	}
+
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	WorkoutHandler := api.NewWorkoutHandler()
 
@@ -35,8 +41,5 @@ func NewApplication() (*Application, error) {
 }
 
 func (a *Application) HealthCheck(w http.ResponseWriter, r *http.Request) {
-	_, err := fmt.Fprint(w, "Status is available\n")
-	if err != nil {
-	}
-	return
+	fmt.Fprintf(w, "Status is available\n")
 }
