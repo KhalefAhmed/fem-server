@@ -1,18 +1,19 @@
--- +goose UP
--- +goose statementBegin
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS workouts
 (
-    id               BIGINT PRIMARY KEY,
-    -- user id
+    id               BIGSERIAL PRIMARY KEY,
+    -- user_id
+    title            VARCHAR(255) NOT NULL,
     description      TEXT,
-    duration_minutes INTEGER NOT NULL,
+    duration_minutes INTEGER      NOT NULL,
     calories_burned  INTEGER,
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
--- +goose statementEnd
+-- +goose StatementEnd
 
--- +goose DOWN
--- +goose statementBegin
+-- +goose Down
+-- +goose StatementBegin
 DROP TABLE workouts;
--- +goose statementEnd
+-- +goose StatementEnd
