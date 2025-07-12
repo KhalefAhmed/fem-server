@@ -1,17 +1,22 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/KhalefAhmed/fem-server/internal/store"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
 )
 
 type WorkoutHandler struct {
+	workoutStore store.WorkoutStore
 }
 
-func NewWorkoutHandler() *WorkoutHandler {
-	return &WorkoutHandler{}
+func NewWorkoutHandler(workoutStore store.WorkoutStore) *WorkoutHandler {
+	return &WorkoutHandler{
+		workoutStore: workoutStore,
+	}
 }
 
 func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Request) {
@@ -33,5 +38,20 @@ func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Re
 }
 
 func (wh *WorkoutHandler) HandleCreateWorkout(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "created a workout\n")
+	var workout store.Workout
+	err := json.NewDecoder(r.Body).Decode(&workout)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed to create workout", http.StatusInternalServerError)
+		return
+	}
+
+	createdWorkout, err := wh.workoutStore.CreateWorkout(&workout)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "failed to insert in base workout", http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(createdWorkout)
 }
