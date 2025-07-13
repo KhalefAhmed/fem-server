@@ -92,10 +92,10 @@ Content-Type: application/json
 }
 
 ### Récupération d'un workout
-GET http://localhost:8080/workouts/2
+GET http://localhost:8080/workouts/3
 
 ### Mise à jour d'un workout existant
-PUT http://localhost:8080/workouts/2
+PUT http://localhost:8080/workouts/3
 Content-Type: application/json
 
 {

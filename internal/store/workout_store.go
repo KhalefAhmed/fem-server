@@ -85,7 +85,7 @@ func (pg *PostgresWorkoutStore) GetWorkout(id int64) (*Workout, error) {
 	query := `SELECT id, title, description, duration_minutes, calories_burned
 FROM workouts WHERE id = $1`
 
-	err := pg.db.QueryRow(query, id).Scan(&workout.ID, &workout.Description, &workout.DurationMinutes, &workout.CaloriesBurned)
+	err := pg.db.QueryRow(query, id).Scan(&workout.ID, &workout.Title, &workout.Description, &workout.DurationMinutes, &workout.CaloriesBurned)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
