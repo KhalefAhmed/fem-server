@@ -14,6 +14,7 @@ import (
 type Application struct {
 	Logger         *log.Logger
 	WorkoutHandler *api.WorkoutHandler
+	UserHandler    *api.UserHandler
 	DB             *sql.DB
 }
 
@@ -29,12 +30,15 @@ func NewApplication() (*Application, error) {
 	}
 
 	workoutStore := store.NewPostgresWorkoutStore(pgDB)
+	userStore := store.NewPostgresUserStore(pgDB)
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	WorkoutHandler := api.NewWorkoutHandler(workoutStore, logger)
+	UserHandler := api.NewUserHandler(userStore, logger)
 
 	app := &Application{
 		Logger:         logger,
 		WorkoutHandler: WorkoutHandler,
+		UserHandler:    UserHandler,
 		DB:             pgDB,
 	}
 
