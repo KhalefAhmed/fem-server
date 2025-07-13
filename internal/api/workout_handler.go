@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/KhalefAhmed/fem-server/internal/store"
 	"github.com/go-chi/chi/v5"
@@ -30,11 +32,6 @@ func (wh *WorkoutHandler) HandleGetWorkoutByID(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Failed to retrieve the workout :"+err.Error(), http.StatusNotFound)
-		return
-	}
-
-	if workout == nil {
-		http.Error(w, "workout not found", http.StatusNotFound)
 		return
 	}
 
@@ -138,4 +135,24 @@ var updateWorkoutRequest struct {
 	DurationMinutes *int                 `json:"duration_minutes"`
 	CaloriesBurned  *int                 `json:"calories_burned"`
 	Entries         []store.WorkoutEntry `json:"entries"`
+}
+
+func (wh *WorkoutHandler) HandleDeleteWorkoutById(w http.ResponseWriter, r *http.Request) {
+	workoutId, _, done := handleIdParam(w, r)
+	if done {
+		return
+	}
+
+	err := wh.workoutStore.DeleteWorkout(workoutId)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "Workout not found", http.StatusNotFound)
+	}
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "error while deleting workout", http.StatusInternalServerError)
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
