@@ -1,6 +1,7 @@
 package store
 
 import (
+	"crypto/sha256"
 	"database/sql"
 	"errors"
 	"golang.org/x/crypto/bcrypt"
@@ -50,8 +51,8 @@ type PostgresUserStore struct {
 	db *sql.DB
 }
 
-func NewPostgresUserStore(db *sql.DB) *PostgresWorkoutStore {
-	return &PostgresWorkoutStore{
+func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
+	return &PostgresUserStore{
 		db: db,
 	}
 }
@@ -59,9 +60,11 @@ func NewPostgresUserStore(db *sql.DB) *PostgresWorkoutStore {
 type UserStore interface {
 	CreateUser(*User) error
 	UpdateUser(*User) error
+	GetUserByUsername(username string) (*User, error)
+	GetUserToken(scope, tokenPlainText string) (*User, error)
 }
 
-func (pg *PostgresWorkoutStore) CreateUser(user *User) error {
+func (pg *PostgresUserStore) CreateUser(user *User) error {
 	query := `
   INSERT INTO users (username, email, password_hash, bio)
   VALUES ($1, $2, $3, $4)
@@ -76,7 +79,7 @@ func (pg *PostgresWorkoutStore) CreateUser(user *User) error {
 	return nil
 }
 
-func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
+func (pg *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	user := &User{
 		PasswordHash: password{},
 	}
@@ -87,7 +90,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
   WHERE username = $1
   `
 
-	err := s.db.QueryRow(query, username).Scan(
+	err := pg.db.QueryRow(query, username).Scan(
 		&user.ID,
 		&user.Username,
 		&user.Email,
@@ -108,7 +111,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	return user, nil
 }
 
-func (pg *PostgresWorkoutStore) UpdateUser(user *User) error {
+func (pg *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
   UPDATE users
   SET username = $1, email = $2, bio = $3, updated_at = CURRENT_TIMESTAMP
@@ -131,4 +134,39 @@ func (pg *PostgresWorkoutStore) UpdateUser(user *User) error {
 	}
 
 	return nil
+}
+
+func (pg *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User, error) {
+	tokenHash := sha256.Sum256([]byte(plaintextPassword))
+
+	query := `
+  SELECT u.id, u.username, u.email, u.password_hash, u.bio, u.created_at, u.updated_at
+  FROM users u
+  INNER JOIN tokens t ON t.user_id = u.id
+  WHERE t.hash = $1 AND t.scope = $2 and t.expiry > $3
+  `
+
+	user := &User{
+		PasswordHash: password{},
+	}
+
+	err := pg.db.QueryRow(query, tokenHash[:], scope, time.Now()).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Bio,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
