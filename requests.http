@@ -176,7 +176,7 @@ Content-Type: application/json
 
 ### Création d'un workout avec authentification
 POST http://localhost:8080/workouts
-Authorization: Bearer 3VGSV7LBT4IVASURIKUOUWOF5WGHOWRXUZA6OLKK7U4ABNCLPVSA
+Authorization: Bearer JD6MJ6DDCGMEDDEHWQFW7GHBFDKBGWIXXJXKJBZAWU4PIQG3E6SQ
 Content-Type: application/json
 
 {
@@ -198,7 +198,7 @@ Content-Type: application/json
 
 ### Mise à jour d'un workout avec authentification
 PUT http://localhost:8080/workouts/6
-Authorization: Bearer M6BOKTWSQJL74GJJO5OIOMOG3V63MYRIKLUBZ6ILEUQUPCN7472Q
+Authorization: Bearer JD6MJ6DDCGMEDDEHWQFW7GHBFDKBGWIXXJXKJBZAWU4PIQG3E6SQ
 Content-Type: application/json
 
 {
