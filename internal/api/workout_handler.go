@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"github.com/KhalefAhmed/fem-server/internal/middleware"
 	"github.com/KhalefAhmed/fem-server/internal/store"
 	"github.com/KhalefAhmed/fem-server/internal/utils"
 	"log"
@@ -48,14 +49,18 @@ func (wh *WorkoutHandler) HandleCreateWorkout(w http.ResponseWriter, r *http.Req
 		utils.WriteJson(w, http.StatusBadRequest, utils.Envelope{"error": "invalid request sent"})
 		return
 	}
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil || currentUser.IsAnonymous() {
+		utils.WriteJson(w, http.StatusBadRequest, utils.Envelope{"error": "you must be logged"})
+	}
 
+	workout.UserID = currentUser.ID
 	createdWorkout, err := wh.workoutStore.CreateWorkout(&workout)
 	if err != nil {
 		wh.logger.Printf("ERROR: create workout : %v", err)
 		utils.WriteJson(w, http.StatusInternalServerError, utils.Envelope{"error": "failed to create workout"})
 		return
 	}
-
 	utils.WriteJson(w, http.StatusCreated, utils.Envelope{"workout": createdWorkout})
 }
 
@@ -111,11 +116,31 @@ func (wh *WorkoutHandler) HandleUpdateWorkoutById(w http.ResponseWriter, r *http
 		existingWorkout.Entries = updateWorkoutRequest.Entries
 	}
 
+	currentUser := middleware.GetUser(r)
+	if currentUser == nil || currentUser.IsAnonymous() {
+		utils.WriteJson(w, http.StatusBadRequest, utils.Envelope{"error": "you must be logged"})
+		return
+	}
+
+	workoutOwner, err := wh.workoutStore.GetWorkoutOwner(workoutId)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			utils.WriteJson(w, http.StatusNotFound, utils.Envelope{"error": "workout doesn't exist"})
+			return
+		}
+	}
+
 	err = wh.workoutStore.UpdateWorkout(existingWorkout)
 
 	if err != nil {
 		wh.logger.Printf("ERROR: updating workout : %v", err)
 		utils.WriteJson(w, http.StatusInternalServerError, utils.Envelope{"error": "internal server error"})
+		return
+	}
+
+	if workoutOwner != currentUser.ID {
+		utils.WriteJson(w, http.StatusUnauthorized, utils.Envelope{"error": "you are not authorized to update this workout"})
 		return
 	}
 
